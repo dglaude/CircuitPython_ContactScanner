@@ -20,9 +20,9 @@ Once started, the code is scanning for BLE advertisement.
 
 When it detect a phone advertising, it assign one of the LED to the address advertised.
 The colour give information about the power level of the signal received:
-* GREEN: We a signal, but it is weak, there is a phone nearby but not too close
-* RED: We see a signal, very strong, (this is usefull to indentify what LED is your phone located
-* YELLOW: The signal is in between GREEN and RED
+* GREEN: We see a signal, but it is weak, there is a phone nearby but not too close
+* RED: We see a signal, very strong (this is usefull to indentify what LED is your phone associated with)
+* YELLOW: The signal power is in between GREEN and RED
 * BLUE: We have not receive an advertisement from that address since at least 20 second
 * OFF: No signal received since a long time, this LED is recycled for reuse by a another address
 
