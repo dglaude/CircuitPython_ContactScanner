@@ -59,13 +59,26 @@ rows = 10
 NO_IDX = -1
 
 
-BRIGHTNESS = 0.3
-BLUE = (0, 0, 255)
+### Observed value measured on CPB as advertised by my phones with CoronAlert app.
+### Extreem value so that you get full red or full green (-90 to -50 give less frequently pure color)
+NOT_RSSI = -127
+BLUE = (0, 0, 31)       # Color when equal to the special value NOT_RSSI
+MIN_RSSI = -80          # Not in use (use this if you want a formula that scale the color based on RSSI)
+GREEN = (0, 31, 0)      # Color when smaller than GREEN_LIMIT
+GREEN_LIMIT = -75
+YELLOW = (15, 15, 0)    # Color when RSSI between GREEN_LIMIT and RED_LIMIT
+RED_LIMIT = -65
+MAX_RSSI = -60          # Not in use (use this if you want a formula that scale the color based on RSSI)
+RED = (31, 0, 0)        # Color when bigger than RED_LIMIT
 OFF = (0, 0, 0)
+
+
+BRIGHTNESS = 0.3
 strip = neopixel.NeoPixel(board.NEOPIXEL, rows, brightness=BRIGHTNESS)
 strip.fill(BLUE)
-time.sleep(1)
+time.sleep(0.5)
 strip.fill(OFF)
+
 
 debug = 0
 
@@ -76,10 +89,10 @@ def d_print(level, *args, **kwargs):
     elif debug >= level:
         print(*args, **kwargs)
 
+
 last_seen_update_ns = time.monotonic_ns()
 
 screen_update_ns = 250 * 1000 * 1000
-
 hide_time_ns = 20 * 1000 * 1000 * 1000
 stale_time_ns = 200 * 1000 * 1000 * 1000
 
@@ -92,12 +105,6 @@ addresses_count = {}
 
 ### An array of timestamp and advertisement by key (addr)
 last_ad_by_key = {}
-
-### Observed value measured on CPB as advertised by my phones with CoronAlert app.
-### Extreem value so that you get full red or full green (-90 to -50 give less frequently pure color)
-MIN_RSSI = -80
-MAX_RSSI = -60
-NOT_RSSI = -127
 
 
 def remove_old(ad_by_key, expire_time_ns):
@@ -118,22 +125,33 @@ def hide_old(ad_by_key, hide_time_ns):
             ad_by_key[key] = (value[0], value[1], NOT_RSSI, value[3])
 
 
+def delete_old(rows_n, ad_by_key):
+    """Delete older key above the number of rows_n"""
+    ### Sort by last seen to identify earliest that should be cleaned
+    sorted_data = sorted(ad_by_key.items(), key=lambda item: (item[1][1]))
+    ### Number of entries to remove
+    to_delete = len(ad_by_key)-rows_n
+    ### Iterate on the first entry and delete them from the list received
+    for key, value in sorted_data[:to_delete]:
+        ### Delete such entry
+        del ad_by_key[key]
+
+
 def byte_bounded(val):
     return (min(max(round(val) , 0), 255))
 
 
-### Compute a color based on age_ns and rssi
+### Decide color based on rssi (could use age_ns to fade out BLUE)
 def gimme_color(age_ns, rssi):
-    ### power_age should be near 1 for recent data and decreasing toward zero for old data
-
     if rssi == NOT_RSSI:
-        result_color = (0, 0, 31)
+        result_color = BLUE
     else:
-        power_age = 1 - (age_ns / hide_time_ns)
-        red = byte_bounded ( ( ( (rssi-MIN_RSSI) / (MAX_RSSI-MIN_RSSI) ) * 255 ) * power_age )
-        green = byte_bounded ( (255 - ( ( (rssi-MIN_RSSI) / (MAX_RSSI-MIN_RSSI) ) * 255 ) ) * power_age )
-        result_color=(red, green, 0)
-        d_print(1, "Age: ", power_age, " RSSI: ", rssi, " Color: ", result_color)
+        if rssi<=GREEN_LIMIT:
+            result_color = GREEN
+        elif rssi>=RED_LIMIT:
+            result_color = RED
+        else:
+            result_color = YELLOW
     return ( result_color )
 
 
@@ -142,11 +160,8 @@ def update_screen(rows_n, ad_by_key, then_ns):
        The text colour is used to indicate the power of the signal
        """
 
-    ### Sort by the RSSI field, then the time field
-    sorted_data = sorted(ad_by_key.items(),
-                         key=lambda item: (item[0]),  # MAC address
-#                         key=lambda item: (item[1][2], item[1][1]),  # RSSI then unique code
-                         reverse=True)
+    ### Sort by the MAC field
+    sorted_data = sorted(ad_by_key.items(), key=lambda item: (item[0]))
 
     mac_no_idx = {}
     idx_in_use = {}
@@ -169,19 +184,11 @@ def update_screen(rows_n, ad_by_key, then_ns):
     d_print(1, "idx_in_use = ", idx_in_use)
 
 
-
-    if button_left():
-        print(sorted_data)
-        while button_left():
-            pass
-
-
     ### Add the top N rows to to the screen
     ### the key is the mac address as text without any colons
     idx = 0
     for key, value in sorted_data[:rows_n]:
         ad, ad_time_ns, rssi, index_col = value
-
         age_ns = then_ns - ad_time_ns
         pixel_color=gimme_color(age_ns, rssi)
         strip[idx]=pixel_color
@@ -201,14 +208,8 @@ while True:
 
         if 3 in ad.data_dict:
             if ad.data_dict[3] == b'o\xfd':
-
-#                print(dir(ad))
-#                print(ad.data_dict)
-
-                ##addr_b = ad.address.address_bytes
                 addr_text = "".join(["{:02x}".format(b) for b in reversed(ad.address.address_bytes)])
                 last_ad_by_key[addr_text] = (ad, now_ns, ad.rssi, NO_IDX)
-
                 try:
                     addresses_count[addr_text] += 1
                 except KeyError:
@@ -223,8 +224,8 @@ while True:
                 pass
 
         if button_left():
-#            print(last_ad_by_key)
-#            print(ad.address, ad.rssi, ad.scan_response, ad.tx_power, ad.complete_name, ad.short_name)
+            print(last_ad_by_key)
+            print(ad.address, ad.rssi, ad.scan_response, ad.tx_power, ad.complete_name, ad.short_name)
             while button_left():
                 pass
 
@@ -237,6 +238,7 @@ while True:
                 ad.address, ad.rssi, ad.scan_response,
                 ad.tx_power, ad.complete_name, ad.short_name)
 
+    if len(last_ad_by_key)>rows:
+        delete_old(rows, last_ad_by_key)
     hide_old(last_ad_by_key, time.monotonic_ns() - hide_time_ns)
-
     remove_old(last_ad_by_key, time.monotonic_ns() - stale_time_ns)
