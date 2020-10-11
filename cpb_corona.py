@@ -49,10 +49,16 @@ from adafruit_ble.advertising.standard import Advertisement
 ### Inputs (buttons reversed as it is used upside-down with Gizmo)
 _button_a = digitalio.DigitalInOut(board.BUTTON_A)
 _button_a.switch_to_input(pull=digitalio.Pull.DOWN)
+button_right = lambda: _button_a.value
+
 _button_b = digitalio.DigitalInOut(board.BUTTON_B)
 _button_b.switch_to_input(pull=digitalio.Pull.DOWN)
 button_left = lambda: _button_b.value
-button_right = lambda: _button_a.value
+
+_switch = digitalio.DigitalInOut(board.SLIDE_SWITCH)
+_switch.switch_to_input(pull=digitalio.Pull.UP)
+switch = lambda: _switch.value
+
 
 # The number of rows is also the number of NEOPIXEL
 rows = 10
@@ -62,25 +68,17 @@ NO_IDX = -1
 ### Observed value measured on CPB as advertised by my phones with CoronAlert app.
 ### Extreem value so that you get full red or full green (-90 to -50 give less frequently pure color)
 NOT_RSSI = -127
-BLUE = (0, 0, 31)       # Color when equal to the special value NOT_RSSI
-MIN_RSSI = -80          # Not in use (use this if you want a formula that scale the color based on RSSI)
-GREEN = (0, 31, 0)      # Color when smaller than GREEN_LIMIT
-GREEN_LIMIT = -75
-YELLOW = (15, 15, 0)    # Color when RSSI between GREEN_LIMIT and RED_LIMIT
-RED_LIMIT = -65
-MAX_RSSI = -60          # Not in use (use this if you want a formula that scale the color based on RSSI)
-RED = (31, 0, 0)        # Color when bigger than RED_LIMIT
-OFF = (0, 0, 0)
 
 
 BRIGHTNESS = 0.3
 strip = neopixel.NeoPixel(board.NEOPIXEL, rows, brightness=BRIGHTNESS)
-strip.fill(BLUE)
+strip.fill((0, 0, 31))
 time.sleep(0.5)
-strip.fill(OFF)
+strip.fill((0, 0, 0))
 
 
 debug = 0
+
 
 def d_print(level, *args, **kwargs):
     """A simple conditional print for debugging based on global debug level."""
@@ -92,9 +90,56 @@ def d_print(level, *args, **kwargs):
 
 last_seen_update_ns = time.monotonic_ns()
 
-screen_update_ns = 250 * 1000 * 1000
-hide_time_ns = 20 * 1000 * 1000 * 1000
-stale_time_ns = 200 * 1000 * 1000 * 1000
+screen_update_ns =        250 * 1000 * 1000
+hide_time_ns =      20 * 1000 * 1000 * 1000
+
+
+MINI_BLUE = (0, 0, 1)
+
+SHADE_BLUE = [
+    (0, 0, 63),
+    (0, 0, 31),
+    (0, 0, 15),
+    (0, 0, 7),
+    (0, 0, 3)
+    ]
+
+TIME_BLUE = [
+    50 * 1000 * 1000 * 1000,
+    80 * 1000 * 1000 * 1000,
+    110 * 1000 * 1000 * 1000,
+    140 * 1000 * 1000 * 1000,
+    170 * 1000 * 1000 * 1000
+    ]
+
+
+RSSI_DEFAULT_COLOR = (0, 63, 0)
+
+RSSI_COLOR = [
+    (0, 31, 0),
+    (15, 31, 0),
+    (15, 15, 0),
+    (31, 15, 0),
+    (31, 0, 0),
+    (63, 0, 0)
+    ]
+
+RSSI_VALUE = [
+    -80,
+    -75,
+    -70,
+    -65,
+    -60,
+    -55
+    ]
+
+NOT_RSSI = -127
+
+
+OFF = (0, 0, 0)
+
+
+stale_time_ns =    200 * 1000 * 1000 * 1000
 
 scan_time_s = 10
 
@@ -105,6 +150,25 @@ addresses_count = {}
 
 ### An array of timestamp and advertisement by key (addr)
 last_ad_by_key = {}
+
+
+
+
+### Decide color based on rssi (could use age_ns to fade out BLUE)
+def gimme_color(age_ns, rssi):
+    if rssi == NOT_RSSI:
+        result_color = MINI_BLUE
+        for i in range(len(TIME_BLUE)):
+            if age_ns < TIME_BLUE[i]:
+                result_color = SHADE_BLUE[i]
+                break
+    else:
+        result_color = RSSI_DEFAULT_COLOR
+        for i in range(len(RSSI_VALUE)):
+            if rssi < RSSI_VALUE[i]:
+                result_color = RSSI_COLOR[i]
+                break
+    return ( result_color )
 
 
 def remove_old(ad_by_key, expire_time_ns):
@@ -141,18 +205,8 @@ def byte_bounded(val):
     return (min(max(round(val) , 0), 255))
 
 
-### Decide color based on rssi (could use age_ns to fade out BLUE)
-def gimme_color(age_ns, rssi):
-    if rssi == NOT_RSSI:
-        result_color = BLUE
-    else:
-        if rssi<=GREEN_LIMIT:
-            result_color = GREEN
-        elif rssi>=RED_LIMIT:
-            result_color = RED
-        else:
-            result_color = YELLOW
-    return ( result_color )
+
+
 
 
 def update_screen(rows_n, ad_by_key, then_ns):
