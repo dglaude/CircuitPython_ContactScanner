@@ -46,7 +46,7 @@ from adafruit_ble import BLERadio
 from adafruit_ble.advertising.standard import Advertisement
 
 
-### Inputs (buttons reversed as it is used upside-down with Gizmo)
+### Inputs
 _button_a = digitalio.DigitalInOut(board.BUTTON_A)
 _button_a.switch_to_input(pull=digitalio.Pull.DOWN)
 button_right = lambda: _button_a.value
@@ -77,9 +77,20 @@ time.sleep(0.5)
 strip.fill((0, 0, 0))
 
 
+stale_time_ns =    200 * 1000 * 1000 * 1000
+
+scan_time_s = 10
+
+ble = BLERadio()
+ble.name = "CPB"
+
+addresses_count = {}
+
+### An array of timestamp and advertisement by key (addr)
+last_ad_by_key = {}
+
+
 debug = 0
-
-
 def d_print(level, *args, **kwargs):
     """A simple conditional print for debugging based on global debug level."""
     if not isinstance(level, int):
@@ -95,66 +106,15 @@ hide_time_ns =      20 * 1000 * 1000 * 1000
 
 
 MINI_BLUE = (0, 0, 1)
-
-SHADE_BLUE = [
-    (0, 0, 63),
-    (0, 0, 31),
-    (0, 0, 15),
-    (0, 0, 7),
-    (0, 0, 3)
-    ]
-
-TIME_BLUE = [
-    50 * 1000 * 1000 * 1000,
-    80 * 1000 * 1000 * 1000,
-    110 * 1000 * 1000 * 1000,
-    140 * 1000 * 1000 * 1000,
-    170 * 1000 * 1000 * 1000
-    ]
-
+SHADE_BLUE = [(0, 0, 63), (0, 0, 31), (0, 0, 15), (0, 0, 7), (0, 0, 3)]
+TIME_BLUE = [50 * 1000 * 1000 * 1000, 80 * 1000 * 1000 * 1000, 110 * 1000 * 1000 * 1000, 140 * 1000 * 1000 * 1000, 170 * 1000 * 1000 * 1000]
 
 RSSI_DEFAULT_COLOR = (0, 63, 0)
-
-RSSI_COLOR = [
-    (0, 31, 0),
-    (15, 31, 0),
-    (15, 15, 0),
-    (31, 15, 0),
-    (31, 0, 0),
-    (63, 0, 0)
-    ]
-
-RSSI_VALUE = [
-    -80,
-    -75,
-    -70,
-    -65,
-    -60,
-    -55
-    ]
-
-NOT_RSSI = -127
+RSSI_COLOR = [(0, 31, 0), (15, 31, 0), (15, 15, 0), (31, 15, 0), (31, 0, 0), (63, 0, 0)]
+RSSI_VALUE = [-80, -75, -70, -65, -60, -55]
 
 
-OFF = (0, 0, 0)
-
-
-stale_time_ns =    200 * 1000 * 1000 * 1000
-
-scan_time_s = 10
-
-ble = BLERadio()
-ble.name = "CPB"
-
-addresses_count = {}
-
-### An array of timestamp and advertisement by key (addr)
-last_ad_by_key = {}
-
-
-
-
-### Decide color based on rssi (could use age_ns to fade out BLUE)
+### Decide color based on rssi and age_ns
 def gimme_color(age_ns, rssi):
     if rssi == NOT_RSSI:
         result_color = MINI_BLUE
@@ -199,14 +159,6 @@ def delete_old(rows_n, ad_by_key):
     for key, value in sorted_data[:to_delete]:
         ### Delete such entry
         del ad_by_key[key]
-
-
-def byte_bounded(val):
-    return (min(max(round(val) , 0), 255))
-
-
-
-
 
 
 def update_screen(rows_n, ad_by_key, then_ns):
