@@ -47,14 +47,6 @@ from adafruit_ble.advertising.standard import Advertisement
 
 
 ### Inputs
-_button_a = digitalio.DigitalInOut(board.BUTTON_A)
-_button_a.switch_to_input(pull=digitalio.Pull.DOWN)
-button_right = lambda: _button_a.value
-
-_button_b = digitalio.DigitalInOut(board.BUTTON_B)
-_button_b.switch_to_input(pull=digitalio.Pull.DOWN)
-button_left = lambda: _button_b.value
-
 _switch = digitalio.DigitalInOut(board.SLIDE_SWITCH)
 _switch.switch_to_input(pull=digitalio.Pull.UP)
 switch = lambda: _switch.value
@@ -221,19 +213,6 @@ while True:
                 except KeyError:
                     addresses_count[addr_text] = 1
 
-        if button_right():
-            debug_mem_free = gc.mem_free()
-            print("Memfree: ", debug_mem_free)
-            print("AddCount:", addresses_count)
-            print("MACS", len(addresses_count))
-            while button_right():
-                pass
-
-        if button_left():
-            print(last_ad_by_key)
-            print(ad.address, ad.rssi, ad.scan_response, ad.tx_power, ad.complete_name, ad.short_name)
-            while button_left():
-                pass
 
         if now_ns - last_seen_update_ns > screen_update_ns:
             gc.collect()
