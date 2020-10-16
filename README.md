@@ -1,20 +1,36 @@
 # CircuitPython_ContactScanner
 Detecting Contract Tracing BLE advertisement with CircuitPython
 
+Version by chronological order
+
+## clue_cpb_scanner.py : Graphical version working on Circuit Playground Bluefruit and CLUE
+
+See also: https://twitter.com/DavidGlaude/status/1311435336686473216
+
+This is an uggly text only version that display the random MAC used and RSSI as numerical value...
+I don't recommend using this as I am working on a graphical version.
+
+Most of the code from this version come from @kevinjwalters: https://github.com/kevinjwalters/circuitpython-examples/blob/master/clue/clue-ble-scanner.py
+Further version are very much simplified and a lot of the code is reworked, replaced, modified, ...
+
 ## cpb_corona.py : Simple version NeoPixel for Circuit Playground Bluefruit
 
 See also: https://twitter.com/DavidGlaude/status/1311791062445371398?s=20
 
-## clue_cpb_scanner.py : Graphical version working on Circuit Playground Bluefruit and CLUE
+This provide now a colorfull indication of nearby advertiser, this is so far the most portable solution if you find a way to attach it.
 
-See also: https://twitter.com/DavidGlaude/status/1224061386185154561?s=20
+## clue_with_snow_pi_rgb.py	Add Snow Pi RGB support, attach to a CLUE.
 
+This use the CLUE and an external 12 NeoPixel SnowMan designed for micro:bit, but you can use it with any strip of NeoPixel.
 
+See also: https://twitter.com/DavidGlaude/status/1317137397902082049?s=20
 
-Credit for most of the code to @kevinjwalters: https://github.com/kevinjwalters/circuitpython-examples/blob/master/clue/clue-ble-scanner.py
+## clue_with_neotrellis.py		Create clue_with_neotrellis.py
 
+This use the CLUE and an external 16 NeoTrellis (the touch part of the NeoTrellis is not used).
+Only used that if you have a NeoTrellis and no NeoPixel at all.
 
-## Using the Circuit Playground Bluefruit
+## Understanding the colour code (Circuit Playground Bluefruit)
 
 Once started, the code is scanning for BLE advertisement.
 When an advertising phone is detected, one LED is assign to the advertised address and a color is  displayed.
