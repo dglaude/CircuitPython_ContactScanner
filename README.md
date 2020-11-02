@@ -32,7 +32,13 @@ Only used that if you have a NeoTrellis and no NeoPixel at all.
 
 ## itsybitsy_nrf_blink_scanner.py Simple LED interface, just blink a number of time every 5 seconds
 
-This is made for the ItsyBitsy NRF, but could work on Feather NRF or Feather Sense.
+This is made for the ItsyBitsy NRF, blinking the Blue LED.
+(turning off the DotStar)
+
+## feather_nrf52_blink.py Same as above but on Feather nRF52840 (and maybe sense)
+
+This is made for the Feather NRF, blinking the Blue LED.
+(turning off the NeoPixel)
 
 ## Understanding the colour code (Circuit Playground Bluefruit)
 
