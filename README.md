@@ -30,6 +30,10 @@ See also: https://twitter.com/DavidGlaude/status/1317137397902082049?s=20
 This use the CLUE and an external 16 NeoTrellis (the touch part of the NeoTrellis is not used).
 Only used that if you have a NeoTrellis and no NeoPixel at all.
 
+## itsybitsy_nrf_blink_scanner.py Simple LED interface, just blink a number of time every 5 seconds
+
+This is made for the ItsyBitsy NRF, but could work on Feather NRF or Feather Sense.
+
 ## Understanding the colour code (Circuit Playground Bluefruit)
 
 Once started, the code is scanning for BLE advertisement.
